@@ -16,6 +16,10 @@ public class BufferPool {
         this.initialize(size);
     }
 
+    /**
+     * This method initializes the buffer pool with the provided size
+     * @param size
+     */
     private void initialize(int size) {
         buffers = new Frame[size];
         for (int i=0; i<buffers.length; i++) {
@@ -87,21 +91,6 @@ public class BufferPool {
         }
 
         this.addToPool(k, fileNumber, CommandType.GET_COMMAND);
-//        int emptyIndex = getEmpty();
-//        if (emptyIndex != -1 && content != null) {
-//            // Initialize frame using content, record id and block id (file number)
-//            buffers[emptyIndex] = new Frame(content, k, fileNumber);
-//            // Extract the record content from the frame
-//            String recordContent = this.extractRecordContent(buffers[emptyIndex], k);
-//            // Output message
-//            String action = "Brought file " +  fileNumber + " from disk";
-//            String placement = "Placed in frame " + buffers[emptyIndex].getBlockId();
-//            OutputManager.writeRecordContent(recordContent, action, placement);
-//            return emptyIndex;
-//        }
-//        // The block is not in memory, the buffer pool array is full (no empty frames),
-//        // but some frames can be taken out
-//        this.makeSpace(fileNumber);
 
         return -1; // stub
     }
@@ -195,18 +184,12 @@ public class BufferPool {
     }
 
     /**
-     * This method checks if the needed blockId is not in the buffer pool and if it's not it brings it to the buffer pool (in an empty frame)
+     * This method tries to add a frame to the buffer pool
+     * @param queryForId
+     * @param blockId
+     * @param commandType
+     * @return the index of the frame added to the pool
      */
-    private void checkAndBringBlockID(int queryForId, int blockId) {
-        // Call the search method to know the buffer number
-        int search = this.search(blockId);
-        if (search == -1) {
-            // We need to bring the block to the pool since it was not found
-            String content = Disk.INSTANCE.readBlock(DiskFactory.DATASET_DIR, blockId);
-            // this.addToPool(queryForId, blockId);
-        }
-    }
-
     private int addToPool(int queryForId, int blockId, CommandType commandType) {
         // Calculate file number
         int fileNumber = calcFileNumber(queryForId);
@@ -271,7 +254,7 @@ public class BufferPool {
     /**
      * This method should be used if there is no available space in the buffer pool as it takes out one frame and returns it back to disk (if possible) based on the placement policy:
      * - We select the first empty frame that we find starting from the top of the buffer pool
-     * @return
+     * @return a HashMap which contains the free index and the previous block id or an empty HashMap
      */
     private Map<String, Integer> makeSpace() {
         // We need to first make sure that the frame's pinned flag is set to false
@@ -374,9 +357,6 @@ public class BufferPool {
             case CommandFactory.SET_COMMAND:
                 k = command.getK();
                 String newRecordContent = command.getRecord();
-
-                // System.out.println(k);
-                // System.out.println(newRecordContent);
                 this.set(k, newRecordContent);
                 break;
             case CommandFactory.PIN_COMMAND:
